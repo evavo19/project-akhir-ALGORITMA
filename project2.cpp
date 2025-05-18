@@ -49,7 +49,7 @@ void tambahPlaylist(string nama)
             last = last->next;
         last->next = baru;
     }
-    cout << "Playlist \"" << nama << "\" berhasil dibuat.\n";
+    cout << "Playlist \"" << nama << "\" berhasil dibuat!\n";
 }
 
 // Tampilkan semua playlist
@@ -57,7 +57,7 @@ void tampilkanPlaylist()
 {
     if (!headPlaylist)
     {
-        cout << "Belum ada playlist yang terbuat.\n";
+        cout << "Belum ada playlist yang terbuat!!!\n";
         return;
     }
     cout << "\nDaftar playlist!\n";
