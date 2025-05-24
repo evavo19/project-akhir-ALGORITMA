@@ -1,5 +1,4 @@
 #include <iostream>
-#include <fstream>
 #include <string>
 #include <iomanip>
 using namespace std;
@@ -23,6 +22,23 @@ struct Playlist
 
 Lagu *head = nullptr;
 Playlist *headPlaylist = nullptr;
+
+// Tambah lagu biasa (dipakai di load dari file)
+void tambahLagu(string judul, string artis, int jumlahPendengar, string genre, float rating, string playlist)
+{
+    Lagu *baru = new Lagu{judul, artis, jumlahPendengar, genre, rating, playlist, nullptr};
+    if (!head)
+    {
+        head = baru;
+    }
+    else
+    {
+        Lagu *temp = head;
+        while (temp->next)
+            temp = temp->next;
+        temp->next = baru;
+    }
+}
 
 // Tambah playlist baru
 void tambahPlaylist(string nama)
@@ -52,48 +68,38 @@ void tambahPlaylist(string nama)
     cout << "Playlist \"" << nama << "\" berhasil dibuat!\n";
 }
 
-// Tampilkan semua playlist
+// fungsi menampilkan daftar playlist
 void tampilkanPlaylist()
 {
-    if (!headPlaylist)
+    if (!headPlaylist) // mengecek apakah pointer headplaylist kosong
     {
-        cout << "Belum ada playlist yang terbuat!!!\n";
+        cout << "Belum ada playlist yang terbuat!!!\n"; // jika kosong, tampilkan pesan 
         return;
     }
-    cout << "\nDaftar playlist!\n";
-    Playlist *temp = headPlaylist;
-    int no = 1;
+    cout << "\nDaftar Playlist!\n"; // jika ada playlist tampilkan daftar playlist
+    
+    
+    Playlist *temp = headPlaylist; // pointer sementara untuk iterasi
+    int no = 1; // untuk nomor urut playlist
+    
+    // looping selama masih ada playlist
     while (temp)
     {
-        cout << no++ << ". " << temp->nama << "\n";
-        temp = temp->next;
+        cout << no++ << ". " << temp->nama << "\n"; // tampilkan no dan nama playlist
+        temp = temp->next; // memindahkan ke playlist selanjutnya
     }
 }
 
-// Cek ada playlist atau tidak
+// fungsu untuk mengecek apakah ada playlist yang sudah dibuat atau belum
 bool adaPlaylist()
 {
+    // mengembalikan nilai true jika headPlaylist tidak null (artinya ada playlist)
+    // jika null (tidak ada playlist) ->
     return headPlaylist != nullptr;
 }
 
-// Tambah lagu biasa (dipakai di load dari file)
-void tambahLagu(string judul, string artis, int jumlahPendengar, string genre, float rating, string playlist)
-{
-    Lagu *baru = new Lagu{judul, artis, jumlahPendengar, genre, rating, playlist, nullptr};
-    if (!head)
-    {
-        head = baru;
-    }
-    else
-    {
-        Lagu *temp = head;
-        while (temp->next)
-            temp = temp->next;
-        temp->next = baru;
-    }
-}
 
-// Tambah lagu dengan tanya playlist interaktif
+// fungsi untuk menambahkan lagu
 void tambahLaguInteraktif()
 {
     string judul, artis, genre, playlist = "";
@@ -196,12 +202,13 @@ void tampilkanLagu()
         return;
     }
     Lagu *temp = head;
+    
     int i = 1;
     while (temp)
     {
         cout << "\nJudul\t\t\t: " << temp->judul << endl;
         cout << "Artis\t\t\t: " << temp->artis << endl;
-        cout << "Jumlah Pendengar\t: " << temp->jumlahPendengar << " Kali Didengar" << endl;
+        cout << "Jumlah Pendengar\t: " << temp->jumlahPendengar << " X Didengar" << endl;
         cout << "Genre\t\t\t: " << temp->genre << endl;
         cout << "Rating\t\t\t: " << fixed << setprecision(1) << temp->rating << endl;
         cout << "Playlist\t\t: " << (temp->playlist.empty() ? "-" : temp->playlist) << endl;
@@ -258,6 +265,7 @@ void urutkanLagu()
         }
     } while (swapped);
     cout << "Lagu berhasil diurutkan berdasarkan jumlah pendengar.\n";
+    tampilkanLagu();
 }
 
 // Filter berdasarkan artis atau genre
@@ -308,51 +316,134 @@ void hapusLagu(string judul)
 }
 
 // Simpan ke file
-void simpanKeFile(string filename)
-{
-    ofstream file(filename);
-    Lagu *temp = head;
-    while (temp)
-    {
-        file << temp->judul << "," << temp->artis << "," << temp->jumlahPendengar << ","
-             << temp->genre << "," << temp->rating << "," << temp->playlist << "\n";
-        temp = temp->next;
+void simpanKeFile(const string& filename) {
+    int panjang = filename.size();
+    char* namaFile = new char[panjang + 1];
+    for (int i = 0; i < panjang; i++) {
+        namaFile[i] = filename[i];
     }
-    file.close();
-    cout << "\nData disimpan ke " << filename << endl;
-}
+    namaFile[panjang] = '\0';
 
-// Load dari file
-void loadDariFile(string filename)
-{
-    ifstream file(filename);
-    if (!file)
-    {
-        cout << "\nGagal membuka file " << filename << endl;
+    FILE* file = fopen(namaFile, "w");
+    if (!file) {
+        cout << "Gagal membuka file.\n";
+        delete[] namaFile;
         return;
     }
-    void hapusSemua();
-    string line;
-    while (getline(file, line))
-    {
-        size_t pos = 0;
-        string arr[6];
-        int idx = 0;
-        while ((pos = line.find(',')) != string::npos && idx < 5)
-        {
-            arr[idx++] = line.substr(0, pos);
-            line.erase(0, pos + 1);
-        }
-        arr[idx] = line;
 
-        int jumlahPendengar = stoi(arr[2]);
-        float rating = stof(arr[4]);
-
-        tambahLagu(arr[0], arr[1], jumlahPendengar, arr[3], rating, arr[5]);
+    Lagu* temp = head;
+    while (temp) {
+        fprintf(file, "%s,%s,%d,%s,%.1f,%s\n",
+            temp->judul.c_str(),
+            temp->artis.c_str(),
+            temp->jumlahPendengar,
+            temp->genre.c_str(),
+            temp->rating,
+            temp->playlist.c_str());
+        temp = temp->next;
     }
-    file.close();
-    cout << "\nData dimuat dari " << filename << endl;
+
+    fclose(file);
+    delete[] namaFile;
+    cout << "Data berhasil disimpan ke file.\n";
 }
+
+
+void hapusSemua();
+
+// Fungsi untuk membaca data lagu dari file teks tanpa fungsi string lanjutan
+void loadDariFile(const string &filename)
+{
+    // ubah string ke char array
+    char namaFile[100];
+    int i;
+    for (i = 0; i < filename.length() && i < 99; i++)
+    {
+        namaFile[i] = filename[i];
+    }
+    namaFile[i] = '\0'; // akhiri dengan null character
+
+    // buka file
+    FILE *file = fopen(namaFile, "r");
+    if (file == NULL)
+    {
+        cout << "Gagal membuka file " << filename << endl;
+        return;
+    }
+
+    hapusSemua(); // hapus semua data lama
+
+    char line[256];
+
+    while (fgets(line, sizeof(line), file))
+    {
+        // hapus newline
+        int j = 0;
+        while (line[j] != '\0')
+        {
+            if (line[j] == '\n' || line[j] == '\r')
+            {
+                line[j] = '\0';
+                break;
+            }
+            j++;
+        }
+
+        string data[6];
+        int index = 0, start = 0;
+        for (int k = 0; line[k] != '\0'; k++)
+        {
+            if (line[k] == ',')
+            {
+                data[index] = "";
+                for (int m = start; m < k; m++)
+                    data[index] += line[m];
+                index++;
+                start = k + 1;
+            }
+        }
+        // ambil bagian terakhir
+        data[index] = "";
+        for (int m = start; line[m] != '\0'; m++)
+            data[index] += line[m];
+
+        // konversi jumlah pendengar (int)
+        int jumlahPendengar = 0;
+        for (int x = 0; x < data[2].size(); x++)
+        {
+            jumlahPendengar = jumlahPendengar * 10 + (data[2][x] - '0');
+        }
+
+        // konversi rating (float)
+        float rating = 0;
+        bool titik = false;
+        float pembagi = 10;
+        for (int x = 0; x < data[4].size(); x++)
+        {
+            if (data[4][x] == '.')
+            {
+                titik = true;
+            }
+            else if (!titik)
+            {
+                rating = rating * 10 + (data[4][x] - '0');
+            }
+            else
+            {
+                rating += float(data[4][x] - '0') / pembagi;
+                pembagi *= 10;
+            }
+        }
+
+        // tambah ke linked list
+        tambahLagu(data[0], data[1], jumlahPendengar, data[3], rating, data[5]);
+    }
+
+    fclose(file);
+    cout << "Data berhasil dimuat dari " << filename << endl;
+}
+
+
 
 // Hapus semua lagu dan playlist dari memori
 void hapusSemua()
@@ -370,6 +461,7 @@ void hapusSemua()
         delete temp;
     }
 }
+
 
 int main()
 {
