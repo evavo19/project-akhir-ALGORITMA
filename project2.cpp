@@ -6,7 +6,7 @@ using namespace std;
 struct Lagu
 {
     string judul;
-    string artis;
+    string penyanyi;
     int jumlahPendengar;
     string genre;
     float rating;
@@ -23,14 +23,13 @@ struct Playlist
 Lagu *head = nullptr;
 Playlist *headPlaylist = nullptr;
 
-// Tambah lagu biasa (dipakai di load dari file)
-void tambahLagu(string judul, string artis, int jumlahPendengar, string genre, float rating, string playlist)
+// fungsi menambah lagu biasa (dipakai di load dari file) menyimpan data lagu ke dalam struktur data (linked list)
+void tambahLagu(string judul, string penyanyi, int jumlahPendengar, string genre, float rating, string playlist, bool simpanKeFile = true)
 {
-    Lagu *baru = new Lagu{judul, artis, jumlahPendengar, genre, rating, playlist, nullptr};
+    Lagu *baru = new Lagu{judul, penyanyi, jumlahPendengar, genre, rating, playlist, nullptr};
+
     if (!head)
-    {
         head = baru;
-    }
     else
     {
         Lagu *temp = head;
@@ -38,9 +37,30 @@ void tambahLagu(string judul, string artis, int jumlahPendengar, string genre, f
             temp = temp->next;
         temp->next = baru;
     }
+
+    // Simpan ke file hanya jika diminta
+    if (simpanKeFile)
+    {
+        FILE *file = fopen("lagu.txt", "a"); // mode append
+        if (file)
+        {
+            fprintf(file, "%s,%s,%d,%s,%.1f,%s\n",
+                    judul.c_str(),
+                    penyanyi.c_str(),
+                    jumlahPendengar,
+                    genre.c_str(),
+                    rating,
+                    playlist.c_str());
+            fclose(file);
+        }
+        else
+        {
+            cout << "Gagal menyimpan ke file.\n";
+        }
+    }
 }
 
-// Tambah playlist baru
+// fungsi menambah playlist baru
 void tambahPlaylist(string nama)
 {
     Playlist *temp = headPlaylist;
@@ -73,20 +93,19 @@ void tampilkanPlaylist()
 {
     if (!headPlaylist) // mengecek apakah pointer headplaylist kosong
     {
-        cout << "Belum ada playlist yang terbuat!!!\n"; // jika kosong, tampilkan pesan 
+        cout << "Belum ada playlist yang terbuat!!!\n"; // jika kosong, tampilkan pesan
         return;
     }
     cout << "\nDaftar Playlist!\n"; // jika ada playlist tampilkan daftar playlist
-    
-    
+
     Playlist *temp = headPlaylist; // pointer sementara untuk iterasi
-    int no = 1; // untuk nomor urut playlist
-    
+    int no = 1;                    // untuk nomor urut playlist
+
     // looping selama masih ada playlist
     while (temp)
     {
         cout << no++ << ". " << temp->nama << "\n"; // tampilkan no dan nama playlist
-        temp = temp->next; // memindahkan ke playlist selanjutnya
+        temp = temp->next;                          // memindahkan ke playlist selanjutnya
     }
 }
 
@@ -98,17 +117,18 @@ bool adaPlaylist()
     return headPlaylist != nullptr;
 }
 
-
-// fungsi untuk menambahkan lagu
+// fungsi untuk menambahkan lagu input untuk pengguna
 void tambahLaguInteraktif()
 {
-    string judul, artis, genre, playlist = "";
+    // deklarasi variabel untuk menyimpan informasi lagu
+    string judul, penyanyi, genre, playlist = "";
     int jumlahPendengar;
     float rating;
+
     cout << "\nMasukkan Judul Lagu\t\t\t: ";
     getline(cin, judul);
-    cout << "Artis\t\t\t\t\t: ";
-    getline(cin, artis);
+    cout << "Penyanyi\t\t\t\t: ";
+    getline(cin, penyanyi);
     cout << "Masukkan Jumlah Pendengar\t\t: ";
     cin >> jumlahPendengar;
     cin.ignore();
@@ -118,12 +138,16 @@ void tambahLaguInteraktif()
     cin >> rating;
     cin.ignore();
 
+    // validasi nilai rating
     if (rating < 1 || rating > 10)
     {
         cout << "Rating tidak valid. Harus antara 1 hingga 10.\n";
         return;
     }
 
+    cout << "\nLagu \"" << judul << "\" berhasil ditambahkan!\n";
+
+    // tanya apakah lagu akan dimasukkan ke dalam playlist
     char pilihanPlaylist;
     cout << "\nApakah ingin memasukkan lagu ke playlist? (y/n) : ";
     cin >> pilihanPlaylist;
@@ -133,6 +157,7 @@ void tambahLaguInteraktif()
     {
         if (!adaPlaylist())
         {
+            // jika belum ada playlist, minta buat baru
             cout << "\nBelum ada playlist yang terbuat. Silakan buat playlist dulu!\n";
             string namaPlaylist;
             cout << "\nMasukkan nama playlist baru : ";
@@ -142,6 +167,7 @@ void tambahLaguInteraktif()
         }
         else
         {
+            // tampilkan pilihan playlist
             cout << "\nPilih opsi!\n";
             cout << "1. Buat playlist baru\n";
             cout << "2. Masukkan playlist yang sudah ada\n";
@@ -160,24 +186,33 @@ void tambahLaguInteraktif()
             }
             else if (opsi == 2)
             {
-                tampilkanPlaylist();
-                cout << "Masukkan nama playlist dari daftar di atas : ";
-                getline(cin, playlist);
-
+                // tampilkan playlist dengan nomor
+                const int MAKS_PLAYLIST = 100;
+                string daftarPlaylist[MAKS_PLAYLIST];
                 Playlist *temp = headPlaylist;
-                bool ketemu = false;
-                while (temp)
+                int jumlahPlaylist = 0;
+
+                cout << "\nDaftar Playlist:\n";
+                while (temp != NULL && jumlahPlaylist < MAKS_PLAYLIST)
                 {
-                    if (temp->nama == playlist)
-                    {
-                        ketemu = true;
-                        break;
-                    }
+                    cout << (jumlahPlaylist + 1) << ". " << temp->nama << "\n";
+                    daftarPlaylist[jumlahPlaylist] = temp->nama;
+                    jumlahPlaylist++;
                     temp = temp->next;
                 }
-                if (!ketemu)
+
+                int pilihan;
+                cout << "Masukkan nomor playlist dari daftar di atas : ";
+                cin >> pilihan;
+                cin.ignore();
+
+                if (pilihan >= 1 && pilihan <= jumlahPlaylist)
                 {
-                    cout << "Playlist tidak ditemukan, lagu tidak dimasukkan ke playlist.\n";
+                    playlist = daftarPlaylist[pilihan - 1];
+                }
+                else
+                {
+                    cout << "Pilihan tidak valid, lagu tidak dimasukkan ke playlist.\n";
                     playlist = "";
                 }
             }
@@ -188,45 +223,59 @@ void tambahLaguInteraktif()
         }
     }
 
-    tambahLagu(judul, artis, jumlahPendengar, genre, rating, playlist);
+    // tambahkan lagu ke linked list
+    tambahLagu(judul, penyanyi, jumlahPendengar, genre, rating, playlist);
+
+    // tampilkan pesan sukses
     cout << "\nLagu \"" << judul << "\" berhasil ditambahkan!\n";
     system("cls");
 }
 
-// Tampilkan semua lagu
+// fungsi menampilkan semua lagu dalam linked list
 void tampilkanLagu()
 {
+    // cek apakah linked list kosong (tidak ada lagu)
     if (!head)
     {
         cout << "Belum ada lagu.\n";
-        return;
+        return; // keluar dari fungsi jika tidak ada lagu
     }
+    // petunjuk sementara untuk menelusuri linked list dari awal (head)
     Lagu *temp = head;
-    
+
+    // variabel untuk menghitung urutan lagu
     int i = 1;
+    // perulangan untuk menampilkan data setiap node lagu dalam linked list
     while (temp)
     {
+        // menampilkan informasi lagu
         cout << "\nJudul\t\t\t: " << temp->judul << endl;
-        cout << "Artis\t\t\t: " << temp->artis << endl;
-        cout << "Jumlah Pendengar\t: " << temp->jumlahPendengar << " X Didengar" << endl;
+        cout << "Penyanyi\t\t: " << temp->penyanyi << endl;
+        cout << "Jumlah Pendengar\t: " << temp->jumlahPendengar << " kali didengar" << endl;
         cout << "Genre\t\t\t: " << temp->genre << endl;
         cout << "Rating\t\t\t: " << fixed << setprecision(1) << temp->rating << endl;
+        // Menampilkan nama playlist jika ada, jika tidak maka tampilkan tanda "-"
         cout << "Playlist\t\t: " << (temp->playlist.empty() ? "-" : temp->playlist) << endl;
+
+        // pindah ke node lagu berikutnya
         temp = temp->next;
     }
 }
 
-// Cari lagu berdasarkan judul (substring)
+// fungsi mencari lagu berdasarkan keyword yang dicocokkan dengan judul lagu
 void cariLagu(string keyword)
 {
+    // pointer untuk menelusuri seluruh node lagu dalam linked list
     Lagu *temp = head;
+    // variabel penanda apakah lagu ditemukan
     bool ketemu = false;
+    // perulangan untuk menelusuri seluruh linked list
     while (temp)
     {
         if (temp->judul.find(keyword) != string::npos)
         {
             cout << "\nJudul\t\t\t: " << temp->judul << endl;
-            cout << "Artis\t\t\t: " << temp->artis << endl;
+            cout << "Penyanyi\t\t: " << temp->penyanyi << endl;
             cout << "Jumlah Pendengar\t: " << temp->jumlahPendengar << endl;
             cout << "Genre\t\t\t: " << temp->genre << endl;
             cout << "Rating\t\t\t: " << fixed << setprecision(1) << temp->rating << endl;
@@ -237,49 +286,57 @@ void cariLagu(string keyword)
     }
     if (!ketemu)
         cout << "\nLAGU TIDAK DITEMUKAN!!!\n";
+
+    system("pause");
+    system("cls");
 }
 
-// Sorting berdasarkan jumlah pendengar (descending)
+// fungsi untuk mengurutkan lagu berdasarkan jumlah pendengar secara menurun (descending)
 void urutkanLagu()
 {
+    // jika tidak ada lagu, langsung keluar dari fungsi
     if (!head)
         return;
+
     bool swapped;
+    // bubble sort untuk mengurutkan linked list
     do
     {
-        swapped = false;
-        Lagu *curr = head;
+        swapped = false;   // apakah ada pertukaran data
+        Lagu *curr = head; // mulai dari node pertama
         while (curr->next)
         {
+            // jika node saat ini memiliki jumlah pendengar lebih kecil dari node berikutnya
             if (curr->jumlahPendengar < curr->next->jumlahPendengar)
             {
                 swap(curr->judul, curr->next->judul);
-                swap(curr->artis, curr->next->artis);
+                swap(curr->penyanyi, curr->next->penyanyi);
                 swap(curr->jumlahPendengar, curr->next->jumlahPendengar);
                 swap(curr->genre, curr->next->genre);
                 swap(curr->rating, curr->next->rating);
                 swap(curr->playlist, curr->next->playlist);
-                swapped = true;
+                swapped = true; // tandai bahwa telah terjadi pertukaran
             }
+            // pindah ke node berikutnya
             curr = curr->next;
         }
-    } while (swapped);
+    } while (swapped); // ulangi selama ada pertukaran
     cout << "Lagu berhasil diurutkan berdasarkan jumlah pendengar.\n";
     tampilkanLagu();
 }
 
-// Filter berdasarkan artis atau genre
+// Filter berdasarkan penyanyi atau genre
 void filterLagu(string kriteria, string value)
 {
     Lagu *temp = head;
     bool ketemu = false;
     while (temp)
     {
-        if ((kriteria == "artis" && temp->artis == value) ||
+        if ((kriteria == "penyanyi" && temp->penyanyi == value) ||
             (kriteria == "genre" && temp->genre == value))
         {
             cout << "\nJudul\t\t\t: " << temp->judul << endl;
-            cout << "Artis\t\t\t: " << temp->artis << endl;
+            cout << "Penyanyi\t\t: " << temp->penyanyi << endl;
             cout << "Jumlah Pendengar\t: " << temp->jumlahPendengar << endl;
             cout << "Genre\t\t\t: " << temp->genre << endl;
             cout << "Rating\t\t\t: " << fixed << setprecision(1) << temp->rating << endl;
@@ -297,6 +354,7 @@ void hapusLagu(string judul)
 {
     Lagu *temp = head;
     Lagu *prev = nullptr;
+
     while (temp)
     {
         if (temp->judul == judul)
@@ -305,6 +363,7 @@ void hapusLagu(string judul)
                 prev->next = temp->next;
             else
                 head = temp->next;
+
             delete temp;
             cout << "\nLagu \"" << judul << "\" berhasil dihapus.\n";
             return;
@@ -315,69 +374,45 @@ void hapusLagu(string judul)
     cout << "LAGU TIDAK DITEMUKAN!!!\n";
 }
 
-// Simpan ke file
-void simpanKeFile(const string& filename) {
-    int panjang = filename.size();
-    char* namaFile = new char[panjang + 1];
-    for (int i = 0; i < panjang; i++) {
-        namaFile[i] = filename[i];
-    }
-    namaFile[panjang] = '\0';
-
-    FILE* file = fopen(namaFile, "w");
-    if (!file) {
-        cout << "Gagal membuka file.\n";
-        delete[] namaFile;
-        return;
+void hapusSemua()
+{
+    while (head)
+    {
+        Lagu *temp = head;
+        head = head->next;
+        delete temp;
     }
 
-    Lagu* temp = head;
-    while (temp) {
-        fprintf(file, "%s,%s,%d,%s,%.1f,%s\n",
-            temp->judul.c_str(),
-            temp->artis.c_str(),
-            temp->jumlahPendengar,
-            temp->genre.c_str(),
-            temp->rating,
-            temp->playlist.c_str());
-        temp = temp->next;
+    while (headPlaylist)
+    {
+        Playlist *temp = headPlaylist;
+        headPlaylist = headPlaylist->next;
+        delete temp;
     }
-
-    fclose(file);
-    delete[] namaFile;
-    cout << "Data berhasil disimpan ke file.\n";
 }
 
-
-void hapusSemua();
-
-// Fungsi untuk membaca data lagu dari file teks tanpa fungsi string lanjutan
+// Fungsi untuk membaca data lagu dari file teks tanpa fungsi lanjutan
 void loadDariFile(const string &filename)
 {
-    // ubah string ke char array
     char namaFile[100];
     int i;
     for (i = 0; i < filename.length() && i < 99; i++)
-    {
         namaFile[i] = filename[i];
-    }
-    namaFile[i] = '\0'; // akhiri dengan null character
+    namaFile[i] = '\0';
 
-    // buka file
-    FILE *file = fopen(namaFile, "r");
-    if (file == NULL)
+    FILE *file = fopen("lagu.txt", "r");
+    if (!file)
     {
-        cout << "Gagal membuka file " << filename << endl;
+        cout << "Gagal membuka file" << endl;
         return;
     }
 
-    hapusSemua(); // hapus semua data lama
+    hapusSemua(); // Hapus semua data lama
 
     char line[256];
-
     while (fgets(line, sizeof(line), file))
     {
-        // hapus newline
+        // Hapus newline
         int j = 0;
         while (line[j] != '\0')
         {
@@ -389,11 +424,12 @@ void loadDariFile(const string &filename)
             j++;
         }
 
+        // Pisahkan berdasarkan koma (maks. 6 field)
         string data[6];
         int index = 0, start = 0;
         for (int k = 0; line[k] != '\0'; k++)
         {
-            if (line[k] == ',')
+            if (line[k] == ',' && index < 5)
             {
                 data[index] = "";
                 for (int m = start; m < k; m++)
@@ -402,19 +438,17 @@ void loadDariFile(const string &filename)
                 start = k + 1;
             }
         }
-        // ambil bagian terakhir
-        data[index] = "";
+        // Field terakhir
+        data[5] = "";
         for (int m = start; line[m] != '\0'; m++)
-            data[index] += line[m];
+            data[5] += line[m];
 
-        // konversi jumlah pendengar (int)
+        // Konversi jumlah pendengar (int)
         int jumlahPendengar = 0;
         for (int x = 0; x < data[2].size(); x++)
-        {
             jumlahPendengar = jumlahPendengar * 10 + (data[2][x] - '0');
-        }
 
-        // konversi rating (float)
+        // Konversi rating (float)
         float rating = 0;
         bool titik = false;
         float pembagi = 10;
@@ -435,49 +469,28 @@ void loadDariFile(const string &filename)
             }
         }
 
-        // tambah ke linked list
-        tambahLagu(data[0], data[1], jumlahPendengar, data[3], rating, data[5]);
+        // Tambahkan lagu ke linked list
+        tambahLagu(data[0], data[5], jumlahPendengar, data[3], rating, data[5], 0);
     }
 
     fclose(file);
     cout << "Data berhasil dimuat dari " << filename << endl;
 }
 
-
-
-// Hapus semua lagu dan playlist dari memori
-void hapusSemua()
-{
-    while (head)
-    {
-        Lagu *temp = head;
-        head = head->next;
-        delete temp;
-    }
-    while (headPlaylist)
-    {
-        Playlist *temp = headPlaylist;
-        headPlaylist = headPlaylist->next;
-        delete temp;
-    }
-}
-
-
 int main()
 {
     int pilih;
     do
     {
-        cout << "\n=== MENU SPOTIFY ===\n";
+        cout << "\n===== Menu The Music Library Project =====\n";
         cout << "1. Tambah Lagu\n";
         cout << "2. Tampilkan Lagu\n";
-        cout << "3. Cari Lagu (by Judul)\n";
-        cout << "4. Urutkan Lagu (Jumlah Pendengar)\n";
-        cout << "5. Filter Lagu (by Artis/Genre)\n";
+        cout << "3. Cari Lagu Berdasarkan Judul\n";
+        cout << "4. Urutkan Lagu berdasarkan Jumlah Pendengar (Descending)\n";
+        cout << "5. Filter Lagu (Penyanyi/Genre)\n";
         cout << "6. Hapus Lagu\n";
         cout << "7. Tampilkan Playlist\n";
-        cout << "8. Simpan ke File\n";
-        cout << "9. Load dari File\n";
+        cout << "8. Load dari File\n";
         cout << "0. Keluar\n";
         cout << "Pilih : ";
         cin >> pilih;
@@ -491,6 +504,8 @@ int main()
             break;
         case 2:
             tampilkanLagu();
+            system("pause");
+            system("cls");
             break;
         case 3:
         {
@@ -502,17 +517,107 @@ int main()
         }
         case 4:
             urutkanLagu();
+            system("pause");
+            system("cls");
             break;
         case 5:
         {
+            int pilihKriteria;
+            cout << "Filter berdasarkan:\n";
+            cout << "1. Penyanyi\n";
+            cout << "2. Genre\n";
+            cout << "Pilih : ";
+            cin >> pilihKriteria;
+            cin.ignore();
+
+            system("cls");
+
             string kriteria, value;
-            cout << "Filter berdasarkan (artis/genre) : ";
-            getline(cin, kriteria);
-            cout << "Masukkan " << kriteria << " : ";
-            getline(cin, value);
+            const int MAKS_UNIK = 100;
+            string daftarUnik[MAKS_UNIK];
+            int jumlahUnik = 0;
+            Lagu *temp = head;
+
+            // Ambil daftar unik berdasarkan kriteria
+            if (pilihKriteria == 1)
+            {
+                kriteria = "penyanyi";
+                while (temp)
+                {
+                    bool sudahAda = false;
+                    for (int i = 0; i < jumlahUnik; i++)
+                    {
+                        if (daftarUnik[i] == temp->penyanyi)
+                        {
+                            sudahAda = true;
+                            break;
+                        }
+                    }
+                    if (!sudahAda && jumlahUnik < MAKS_UNIK)
+                    {
+                        daftarUnik[jumlahUnik] = temp->penyanyi;
+                        jumlahUnik++;
+                    }
+                    temp = temp->next;
+                }
+            }
+            else if (pilihKriteria == 2)
+            {
+                kriteria = "genre";
+                while (temp)
+                {
+                    bool sudahAda = false;
+                    for (int i = 0; i < jumlahUnik; i++)
+                    {
+                        if (daftarUnik[i] == temp->genre)
+                        {
+                            sudahAda = true;
+                            break;
+                        }
+                    }
+                    if (!sudahAda && jumlahUnik < MAKS_UNIK)
+                    {
+                        daftarUnik[jumlahUnik] = temp->genre;
+                        jumlahUnik++;
+                    }
+                    temp = temp->next;
+                }
+            }
+            else
+            {
+                cout << "Pilihan tidak valid.\n";
+                break;
+            }
+
+            // Tampilkan daftar yang ditemukan
+            cout << "\nDaftar " << kriteria << ":\n";
+            for (int i = 0; i < jumlahUnik; i++)
+            {
+                cout << i + 1 << ". " << daftarUnik[i] << endl;
+            }
+
+            // Minta pengguna pilih angka
+            int pilihan;
+            cout << "Pilih nomor " << kriteria << " : ";
+            cin >> pilihan;
+            cin.ignore();
+
+            // Validasi
+            if (pilihan < 1 || pilihan > jumlahUnik)
+            {
+                cout << "Pilihan tidak valid.\n";
+                break;
+            }
+
+            value = daftarUnik[pilihan - 1];
+
+            system("cls");
+
+            // Panggil fungsi filter
             filterLagu(kriteria, value);
             break;
         }
+
         case 6:
         {
             string judul;
@@ -523,16 +628,10 @@ int main()
         }
         case 7:
             tampilkanPlaylist();
+            system("pause");
+            system("cls");
             break;
         case 8:
-        {
-            string filename;
-            cout << "Masukkan Nama File : ";
-            getline(cin, filename);
-            simpanKeFile(filename);
-            break;
-        }
-        case 9:
         {
             string filename;
             cout << "Masukkan Nama File : ";
